@@ -21,7 +21,7 @@
 
 // Trick boostdep into requiring URL
 // since we need it for the unit tests
-#ifdef BOOST_RUNTIME_SERVICES_BOOSTDEP
+#ifdef BOOST_CAPY_BOOSTDEP
 #include <boost/url/url.hpp>
 #endif
 
