@@ -204,8 +204,12 @@ public:
         std::size_t wrapper_offset = ptr_offset + sizeof(frame_allocator_base*);
         std::size_t total = wrapper_offset + sizeof(frame_allocator_wrapper);
 
-        Allocator alloc_copy = alloc_;  // Copy before destroying self
-        this->~frame_allocator_wrapper();
+        Allocator alloc_copy = alloc_;  // Copy before deallocating
+        // Note: We intentionally do NOT call the destructor here.
+        // Other coroutine frames may hold pointers to this wrapper and
+        // call virtual methods during their deallocation. The allocator
+        // is copied above so deallocation works correctly, and the vptr
+        // remains valid for any subsequent virtual calls.
         alloc_copy.deallocate(block, total);
     }
 };
