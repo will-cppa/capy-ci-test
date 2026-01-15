@@ -7,4 +7,6 @@
 # Official repository: https://github.com/cppalliance/capy
 #
 
+project ;
+
 build-project unit ;
