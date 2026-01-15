@@ -7,6 +7,6 @@
 # Official repository: https://github.com/cppalliance/capy
 #
 
-project ;
+project /boost/capy/test ;
 
 build-project unit ;
