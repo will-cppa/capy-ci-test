@@ -262,10 +262,10 @@ struct when_all_runner
     {
     }
 
-    // Non-copyable, non-movable - release() is always called immediately
+    // Non-copyable; move needed for coroutine return
     when_all_runner(when_all_runner const&) = delete;
     when_all_runner& operator=(when_all_runner const&) = delete;
-    when_all_runner(when_all_runner&&) = delete;
+    when_all_runner(when_all_runner&&) = default;
     when_all_runner& operator=(when_all_runner&&) = delete;
 
     auto release() noexcept
@@ -408,22 +408,30 @@ using when_all_result_t = std::conditional_t<
     void,
     filter_void_tuple_t<Ts...>>;
 
+/** Helper to extract one result element.
+*/
+template<std::size_t I, typename... Ts>
+auto extract_one(when_all_state<Ts...>& state)
+{
+    using T = std::tuple_element_t<I, std::tuple<Ts...>>;
+    if constexpr (std::is_void_v<T>)
+        return std::tuple<>();
+    else
+        return std::make_tuple(std::move(std::get<I>(state.results_)).get());
+}
+
 /** Extract results from state, filtering void types.
 */
+template<typename... Ts, std::size_t... Is>
+auto extract_results_impl(when_all_state<Ts...>& state, std::index_sequence<Is...>)
+{
+    return std::tuple_cat(extract_one<Is>(state)...);
+}
+
 template<typename... Ts>
 auto extract_results(when_all_state<Ts...>& state)
 {
-    return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-        return std::tuple_cat(
-            [&]() {
-                using T = std::tuple_element_t<Is, std::tuple<Ts...>>;
-                if constexpr (std::is_void_v<T>)
-                    return std::tuple<>();
-                else
-                    return std::make_tuple(std::move(std::get<Is>(state.results_)).get());
-            }()...
-        );
-    }(std::index_sequence_for<Ts...>{});
+    return extract_results_impl(state, std::index_sequence_for<Ts...>{});
 }
 
 } // namespace detail
