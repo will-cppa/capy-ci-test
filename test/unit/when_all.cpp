@@ -7,6 +7,10 @@
 // Official repository: https://github.com/cppalliance/capy
 //
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 // Test that header file is self-contained.
 #include <boost/capy/when_all.hpp>
 
