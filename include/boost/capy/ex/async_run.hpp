@@ -139,6 +139,10 @@ struct async_run_task
                     return false;
                 }
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
                 any_coro await_suspend(any_coro h) const noexcept
                 {
                     // Save before destroy
@@ -168,6 +172,9 @@ struct async_run_task
                     }
                     return std::noop_coroutine();
                 }
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
                 void await_resume() const noexcept
                 {

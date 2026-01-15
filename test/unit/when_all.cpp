@@ -615,7 +615,7 @@ struct when_all_test
 
     // Helper: task that records if stop was requested
     static task<int>
-    checks_stop_token(std::atomic<bool>& stop_was_requested)
+    checks_stop_token(std::atomic<bool>& /*stop_was_requested*/)
     {
         // This task just returns immediately, but in real usage
         // you would check stop_token in a loop
