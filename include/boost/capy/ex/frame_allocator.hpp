@@ -336,8 +336,7 @@ public:
         // Null pointer means global new/delete
         if(raw_ptr == 0)
         {
-            std::size_t total = ptr_offset + sizeof(detail::frame_allocator_base*);
-            ::operator delete(ptr, total);
+            ::operator delete(ptr);
             return;
         }
 
