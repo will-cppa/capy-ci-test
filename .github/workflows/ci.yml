@@ -751,7 +751,7 @@ jobs:
           ASAN_OPTIONS: ${{ ((matrix.compiler == 'apple-clang' || matrix.compiler == 'clang') && 'detect_invalid_pointer_pairs=0:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1') || 'detect_invalid_pointer_pairs=2:strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1' }}
         with:
           source-dir: boost-root
-          modules: capy
+          modules: ${{ steps.patch.outputs.module }}
           toolset: ${{ matrix.b2-toolset }}
           build-variant: ${{ matrix.build-type }}
           cxx: ${{ steps.setup-cpp.outputs.cxx || matrix.cxx || '' }}
