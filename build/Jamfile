@@ -18,7 +18,7 @@ constant c20-requires :
 
 path-constant CAPY_ROOT : .. ;
 
-project boost/capy
+project
   : requirements
     $(c20-requires)
     <define>BOOST_CAPY_SOURCE
