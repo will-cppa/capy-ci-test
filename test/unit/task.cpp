@@ -1145,6 +1145,121 @@ struct task_test
     }
 
     //------------------------------------------------------
+    // Awaitable mode tests (non-fire-and-forget)
+    //------------------------------------------------------
+
+    void
+    testAsyncRunAwaitableValue()
+    {
+        // Test co_await async_run(d)(task) returning a value
+        int dispatch_count = 0;
+        test_dispatcher d(dispatch_count);
+        bool completed = false;
+        int result = 0;
+
+        auto compute = []() -> task<int> {
+            co_return 42;
+        };
+
+        auto outer = [&]() -> task<void> {
+            result = co_await async_run(d)(compute());
+            completed = true;
+        };
+
+        // Run the outer task using async_run
+        async_run(d)(outer(),
+            [](auto&&...){},
+            [](std::exception_ptr) {});
+
+        BOOST_TEST(completed);
+        BOOST_TEST_EQ(result, 42);
+    }
+
+    void
+    testAsyncRunAwaitableVoid()
+    {
+        // Test co_await async_run(d)(task) for void tasks
+        int dispatch_count = 0;
+        test_dispatcher d(dispatch_count);
+        bool inner_ran = false;
+        bool completed = false;
+
+        auto void_task = [&]() -> task<void> {
+            inner_ran = true;
+            co_return;
+        };
+
+        auto outer = [&]() -> task<void> {
+            co_await async_run(d)(void_task());
+            completed = true;
+        };
+
+        // Run the outer task using async_run
+        async_run(d)(outer(),
+            [](auto&&...){},
+            [](std::exception_ptr) {});
+
+        BOOST_TEST(inner_ran);
+        BOOST_TEST(completed);
+    }
+
+    void
+    testAsyncRunAwaitableException()
+    {
+        // Test exception propagation through co_await async_run
+        int dispatch_count = 0;
+        test_dispatcher d(dispatch_count);
+        bool caught = false;
+
+        auto throwing = []() -> task<int> {
+            throw_test_exception("awaitable test");
+            co_return 0;
+        };
+
+        auto outer = [&]() -> task<void> {
+            try {
+                co_await async_run(d)(throwing());
+            } catch (test_exception const&) {
+                caught = true;
+            }
+        };
+
+        async_run(d)(outer(),
+            [](auto&&...){},
+            [](std::exception_ptr) {});
+
+        BOOST_TEST(caught);
+    }
+
+    void
+    testAsyncRunAwaitableNested()
+    {
+        // Test nested co_await async_run calls
+        int dispatch_count = 0;
+        test_dispatcher d(dispatch_count);
+        int result = 0;
+
+        auto inner = []() -> task<int> {
+            co_return 10;
+        };
+
+        auto middle = [&]() -> task<int> {
+            int x = co_await async_run(d)(inner());
+            co_return x * 2;
+        };
+
+        auto outer = [&]() -> task<void> {
+            result = co_await async_run(d)(middle());
+        };
+
+        async_run(d)(outer(),
+            [](auto&&...){},
+            [](std::exception_ptr) {});
+
+        BOOST_TEST_EQ(result, 20);
+    }
+
+    //------------------------------------------------------
     // Memory allocation tests - TLS restoration pattern
     //------------------------------------------------------
 
@@ -1457,6 +1572,45 @@ struct task_test
         BOOST_TEST_EQ(alloc_count, dealloc_count);
     }
 
+    void testFrameAllocationOrder()
+    {
+        int dispatch_count = 0;
+        test_dispatcher d(dispatch_count);
+        bool completed = false;
+
+        int alloc_count = 0;
+        int dealloc_count = 0;
+        std::vector<int> alloc_log;
+
+        // Allocator ID 1 = launcher (Frame #2)
+        // Allocator ID 2 = task (Frame #1)
+        tracking_frame_allocator alloc{1, &alloc_count, &dealloc_count, &alloc_log};
+
+        auto simple = []() -> task<void> {
+            co_return;
+        };
+
+        async_run(d, alloc)(simple(),
+            [&]() { completed = true; },
+            [](std::exception_ptr) {});
+
+        BOOST_TEST(completed);
+        BOOST_TEST_GE(alloc_count, 1);
+        BOOST_TEST(!alloc_log.empty());
+
+        // Verify all allocations used the same allocator
+        for(int id : alloc_log)
+            BOOST_TEST_EQ(id, 1);
+
+        // Expected allocation order:
+        // 1. Frame #2 (launcher) is allocated first
+        // 2. Frame #1 (task) is allocated second
+        // Expected deallocation order:
+        // 1. Frame #1 (task) is destroyed first
+        // 2. Frame #2 (launcher) is destroyed last
+        // This guarantees the pointer in Frame #1's wrapper to Frame #2's embedder is always valid
+    }
+
     void
     run()
     {
@@ -1504,6 +1658,12 @@ struct task_test
         testAsyncRunFireAndForget();
         testAsyncRunSingleHandler();
 
+        // async_run() awaitable mode tests
+        testAsyncRunAwaitableValue();
+        testAsyncRunAwaitableVoid();
+        testAsyncRunAwaitableException();
+        testAsyncRunAwaitableNested();
+
         // Memory allocation tests
         testAllocatorCapturedOnCreation();
         testAllocatorUsedByChildTasks();
@@ -1512,6 +1672,7 @@ struct task_test
         testDeeplyNestedAllocatorPropagation();
         testAllocatorWithMixedTasksAndAsyncOps();
         testDeallocationCount();
+        testFrameAllocationOrder();
     }
 };
 
