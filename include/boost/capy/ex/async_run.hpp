@@ -104,6 +104,7 @@ struct async_run_task
         Dispatcher d_;
         Handler handler_;
         std::exception_ptr ep_;
+        any_coro deferred_destroy_;
 
         template<typename D, typename H, typename... Args>
         promise_type(D&& d, H&& h, Args&&...)
@@ -148,6 +149,7 @@ struct async_run_task
                     // Save before destroy
                     auto handler = std::move(p_->handler_);
                     auto ep = p_->ep_;
+                    auto deferred = p_->deferred_destroy_;
 
                     // Clear thread-local before destroy to avoid dangling pointer
                     frame_allocating_base::clear_frame_allocator();
@@ -157,6 +159,8 @@ struct async_run_task
                     {
                         auto result = std::move(p_->result_);
                         h.destroy();
+                        if(deferred)
+                            deferred.destroy();
                         if(ep)
                             handler(ep);
                         else
@@ -165,6 +169,8 @@ struct async_run_task
                     else
                     {
                         h.destroy();
+                        if(deferred)
+                            deferred.destroy();
                         if(ep)
                             handler(ep);
                         else
@@ -201,7 +207,20 @@ struct async_run_task
 
             auto await_resume()
             {
-                return a_.await_resume();
+                using R = decltype(a_.await_resume());
+                if constexpr (std::is_void_v<R>)
+                {
+                    a_.await_resume();
+                    if constexpr (requires { a_.release(); })
+                        p_->deferred_destroy_ = a_.release();
+                }
+                else
+                {
+                    auto result = a_.await_resume();
+                    if constexpr (requires { a_.release(); })
+                        p_->deferred_destroy_ = a_.release();
+                    return result;
+                }
             }
 
             template<class Promise>
