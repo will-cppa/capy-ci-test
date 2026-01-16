@@ -7,7 +7,7 @@
 # Official repository: https://github.com/cppalliance/capy
 #
 
-import path : glob-tree-ex ;
+import path ;
 import testing ;
 
 project
@@ -26,7 +26,7 @@ project
     ;
 
 # Exclude buffers.cpp to avoid output name conflict with buffers/ directory
-for local f in [ glob-tree-ex . : *.cpp : buffers.cpp ]
+for local f in [ path.glob-tree . : *.cpp : buffers.cpp ]
 {
     run $(f) ;
 }

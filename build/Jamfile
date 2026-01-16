@@ -9,7 +9,7 @@
 
 import ac ;
 import config : requires ;
-import path : glob-tree-ex ;
+import path ;
 
 constant c20-requires :
     [ requires
@@ -31,7 +31,7 @@ project
   : source-location $(CAPY_ROOT)
   ;
 
-alias capy_sources : [ glob-tree-ex $(CAPY_ROOT)/src : *.cpp ] ;
+alias capy_sources : [ path.glob-tree $(CAPY_ROOT)/src : *.cpp ] ;
 
 # Windows CNG library for bcrypt random number generation.
 lib bcrypt_sys : : <name>bcrypt ;
@@ -50,7 +50,7 @@ lib boost_capy
 # Zlib
 using zlib ;
 
-alias capy_zlib_sources : [ glob-tree-ex $(CAPY_ROOT)/src_zlib : *.cpp ] ;
+alias capy_zlib_sources : [ path.glob-tree $(CAPY_ROOT)/src_zlib : *.cpp ] ;
 
 lib boost_capy_zlib
   : capy_zlib_sources
@@ -65,7 +65,7 @@ lib boost_capy_zlib
 # Brotli
 using brotli ;
 
-alias capy_brotli_sources : [ glob-tree-ex $(CAPY_ROOT)/src_brotli : *.cpp ] ;
+alias capy_brotli_sources : [ path.glob-tree $(CAPY_ROOT)/src_brotli : *.cpp ] ;
 
 lib boost_capy_brotli
   : capy_brotli_sources

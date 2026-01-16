@@ -8,7 +8,7 @@
 #
 
 import ac ;
-import path : glob-tree-ex ;
+import path ;
 import testing ;
 
 project
@@ -28,12 +28,12 @@ project
     ;
 
 # Exclude buffers/ which has its own Jamfile
-for local f in [ glob-tree-ex . : *.cpp : file*.cpp buffers ]
+for local f in [ path.glob-tree . : *.cpp : file*.cpp buffers ]
 {
     run $(f) ;
 }
 
-for local f in [ glob-tree-ex . : file*.cpp ]
+for local f in [ path.glob-tree . : file*.cpp ]
 {
     run $(f)
         : requirements
