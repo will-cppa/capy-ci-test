@@ -338,7 +338,8 @@ jobs:
           addrmdl=${{ matrix.x86 && '32' || '64' }}
 
           # This is temporary until we move capy/build/brotli.jam to boost/tools/build
-          echo "import-search ${home}/boost-root/libs/capy/build ;" | sed 's/\/d\//D:\//g' >> user-config.jam
+          module=${GITHUB_REPOSITORY#*/}
+          echo "import-search ${home}/boost-root/libs/${module}/build ;" | sed 's/\/d\//D:\//g' >> user-config.jam
 
           echo "using zlib   : : <include>\"${home}/vcpkg-root/installed/${triplet}/include\" <search>\"${home}/vcpkg-root/installed/${triplet}/lib\" <dll-path>\"${home}/vcpkg-root/installed/${triplet}/bin\" <name>zlib : <address-model>${addrmdl} ;" | sed 's/\/d\//D:\//g' >> user-config.jam
           echo "using brotli : : <include>\"${home}/vcpkg-root/installed/${triplet}/include\" <search>\"${home}/vcpkg-root/installed/${triplet}/lib\" <dll-path>\"${home}/vcpkg-root/installed/${triplet}/bin\"            : <address-model>${addrmdl} ;" | sed 's/\/d\//D:\//g' >> user-config.jam
@@ -432,7 +433,7 @@ jobs:
           export-compile-commands: ${{ matrix.time-trace }}
           package: false
           package-artifact: false
-          ref-source-dir: boost-root/libs/capy
+          ref-source-dir: boost-root/libs/${{ steps.patch.outputs.module }}
           toolchain: ${{ (startsWith(matrix.runs-on, 'windows') && steps.patch-user-config.outputs.toolchain) || '' }}
 
       - name: Set Path
@@ -464,7 +465,7 @@ jobs:
           extra-args: |
             -D BOOST_CI_INSTALL_TEST=ON
             -D CMAKE_PREFIX_PATH=${{ steps.patch.outputs.workspace_root }}/.local
-          ref-source-dir: boost-root/libs/capy
+          ref-source-dir: boost-root/libs/${{ steps.patch.outputs.module }}
           trace-commands: true
 
       - name: Subdirectory Integration Workflow
@@ -485,7 +486,7 @@ jobs:
           install: false
           cmake-version: '>=3.15'
           extra-args: -D BOOST_CI_INSTALL_TEST=OFF
-          ref-source-dir: boost-root/libs/capy/test/cmake_test
+          ref-source-dir: boost-root/libs/${{ steps.patch.outputs.module }}/test/cmake_test
 
       - name: Root Project CMake Workflow
         uses: alandefreitas/cpp-actions/cmake-workflow@v1.9.0
@@ -515,7 +516,7 @@ jobs:
         uses: alandefreitas/cpp-actions/flamegraph@v1.9.0
         if: matrix.time-trace
         with:
-          source-dir: boost-root/libs/capy
+          source-dir: boost-root/libs/${{ steps.patch.outputs.module }}
           build-dir: boost-root/__build_cmake_test__
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -648,7 +649,8 @@ jobs:
 
           BOOST_SRC_DIR="$(pwd)/boost-root"
           export BOOST_SRC_DIR
-          cd boost-root/libs/capy
+          module=${GITHUB_REPOSITORY#*/}
+          cd boost-root/libs/${module}
 
           cd doc
           bash ./build_antora.sh
@@ -663,4 +665,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: antora-docs
-          path: boost-root/libs/capy/doc/build/site
+          path: boost-root/libs/${{ steps.patch.outputs.module }}/doc/build/site
