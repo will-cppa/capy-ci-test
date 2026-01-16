@@ -155,6 +155,9 @@ template<frame_allocator Allocator>
 class frame_allocator_wrapper : public frame_allocator_base
 {
     Allocator alloc_;
+    std::size_t ref_count_ = 1;
+    void* embedded_block_ = nullptr;
+    std::size_t embedded_total_ = 0;
 
     static constexpr std::size_t alignment = alignof(void*);
 
@@ -162,6 +165,19 @@ class frame_allocator_wrapper : public frame_allocator_base
     aligned_offset(std::size_t n) noexcept
     {
         return (n + alignment - 1) & ~(alignment - 1);
+    }
+
+    void
+    release_ref()
+    {
+        if(--ref_count_ == 0 && embedded_block_)
+        {
+            Allocator alloc_copy = alloc_;
+            void* block = embedded_block_;
+            std::size_t total = embedded_total_;
+            embedded_block_ = nullptr;
+            alloc_copy.deallocate(block, total);
+        }
     }
 
 public:
@@ -184,6 +200,7 @@ public:
             static_cast<char*>(raw) + ptr_offset);
         *ptr_loc = this;
 
+        ++ref_count_;
         return raw;
     }
 
@@ -194,6 +211,7 @@ public:
         std::size_t ptr_offset = aligned_offset(user_size);
         std::size_t total = ptr_offset + sizeof(frame_allocator_base*);
         alloc_.deallocate(block, total);
+        release_ref();
     }
 
     void
@@ -204,13 +222,10 @@ public:
         std::size_t wrapper_offset = ptr_offset + sizeof(frame_allocator_base*);
         std::size_t total = wrapper_offset + sizeof(frame_allocator_wrapper);
 
-        Allocator alloc_copy = alloc_;  // Copy before deallocating
-        // Note: We intentionally do NOT call the destructor here.
-        // Other coroutine frames may hold pointers to this wrapper and
-        // call virtual methods during their deallocation. The allocator
-        // is copied above so deallocation works correctly, and the vptr
-        // remains valid for any subsequent virtual calls.
-        alloc_copy.deallocate(block, total);
+        // Defer deallocation until all child frames are deallocated
+        embedded_block_ = block;
+        embedded_total_ = total;
+        release_ref();
     }
 };
 
