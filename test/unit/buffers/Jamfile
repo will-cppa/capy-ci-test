@@ -12,7 +12,7 @@ import testing ;
 project
     : requirements
       <cxxstd>20
-      <library>/boost/capy//boost_capy
+      <library>/boost/capy/build//boost_capy
       <library>/boost/asio//boost_asio/<warnings-as-errors>off
       <source>../../../../url/extra/test_suite/test_main.cpp
       <source>../../../../url/extra/test_suite/test_suite.cpp
