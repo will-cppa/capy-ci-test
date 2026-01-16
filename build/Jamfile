@@ -9,6 +9,7 @@
 
 import ac ;
 import config : requires ;
+import path ;
 
 constant c20-requires :
     [ requires

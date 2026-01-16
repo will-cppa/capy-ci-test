@@ -8,6 +8,7 @@
 #
 
 import ac ;
+import path ;
 import testing ;
 
 project
