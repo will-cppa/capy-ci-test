@@ -8,7 +8,7 @@
 #
 
 import ac ;
-import path ;
+import path : glob-tree-ex ;
 import testing ;
 
 project

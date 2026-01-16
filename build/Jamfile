@@ -9,7 +9,7 @@
 
 import ac ;
 import config : requires ;
-import path ;
+import path : glob-tree-ex ;
 
 constant c20-requires :
     [ requires
