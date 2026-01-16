@@ -171,9 +171,11 @@ add_library(boost_capy include/boost/capy.hpp build/Jamfile ${BOOST_CAPY_HEADERS
 add_library(Boost::capy ALIAS boost_capy)
 boost_capy_setup_properties(boost_capy)
 
-include(BoostInstall OPTIONAL)
-if(COMMAND boost_install)
-    boost_install(TARGETS boost_capy VERSION ${BOOST_CAPY_VERSION} HEADER_DIRECTORY include)
+if(NOT BOOST_CAPY_IS_ROOT)
+    include(BoostInstall OPTIONAL)
+    if(COMMAND boost_install)
+        boost_install(TARGETS boost_capy VERSION ${BOOST_CAPY_VERSION} HEADER_DIRECTORY include)
+    endif()
 endif()
 
 # bcrypt requires platform-specific libraries
